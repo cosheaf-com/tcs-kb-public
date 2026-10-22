@@ -529,8 +529,8 @@ def gate_results(record: dict[str, Any]) -> list[dict[str, Any]]:
     return results
 
 
-def crosscheck_output_claimed_as_gate_pass(record: dict[str, Any]) -> bool:
-    for result in gate_results(record):
+def crosscheck_output_claimed_as_gate_pass(record: dict[str, Any], gates: list[dict[str, Any]] | None = None) -> bool:
+    for result in (gates if gates is not None else gate_results(record)):
         status = str(result.get("status", "")).lower()
         verdict = str(result.get("verdict", "")).lower()
         conclusion = str(result.get("conclusion", "")).lower()
@@ -546,8 +546,8 @@ def crosscheck_output_claimed_as_gate_pass(record: dict[str, Any]) -> bool:
     return False
 
 
-def campaign_output_claimed_as_gate_pass(record: dict[str, Any]) -> bool:
-    for result in gate_results(record):
+def campaign_output_claimed_as_gate_pass(record: dict[str, Any], gates: list[dict[str, Any]] | None = None) -> bool:
+    for result in (gates if gates is not None else gate_results(record)):
         status = str(result.get("status", "")).lower()
         verdict = str(result.get("verdict", "")).lower()
         conclusion = str(result.get("conclusion", "")).lower()
@@ -740,11 +740,12 @@ def check_record(path: Path, record: dict[str, Any]) -> list[PolicyError]:
         errors.append(
             PolicyError(path, "campaign output is claimed as verifier pass")
         )
-    if crosscheck_output_claimed_as_gate_pass(record):
+    gates = gate_results(record)
+    if crosscheck_output_claimed_as_gate_pass(record, gates=gates):
         errors.append(
             PolicyError(path, "cross-check report is claimed as gate pass")
         )
-    if campaign_output_claimed_as_gate_pass(record):
+    if campaign_output_claimed_as_gate_pass(record, gates=gates):
         errors.append(
             PolicyError(path, "campaign output is claimed as gate pass")
         )
