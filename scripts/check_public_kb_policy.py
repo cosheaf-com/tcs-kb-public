@@ -256,7 +256,7 @@ def has_source_metadata(record: dict[str, Any]) -> bool:
     return False
 
 
-def operator_handoff_claimed_as_source_metadata(record: dict[str, Any]) -> bool:
+def _claimed_as_source_metadata(record: dict[str, Any], markers: tuple[str, ...]) -> bool:
     sources = record.get("sources")
     if not isinstance(sources, list):
         return False
@@ -264,61 +264,29 @@ def operator_handoff_claimed_as_source_metadata(record: dict[str, Any]) -> bool:
         if not isinstance(source, dict):
             continue
         text = "\n".join(string_values_and_keys(source)).lower()
-        if any(marker in text for marker in OPERATOR_HANDOFF_SOURCE_MARKERS):
+        if any(marker in text for marker in markers):
             return True
     return False
+
+
+def operator_handoff_claimed_as_source_metadata(record: dict[str, Any]) -> bool:
+    return _claimed_as_source_metadata(record, OPERATOR_HANDOFF_SOURCE_MARKERS)
 
 
 def research_loop_claimed_as_source_metadata(record: dict[str, Any]) -> bool:
-    sources = record.get("sources")
-    if not isinstance(sources, list):
-        return False
-    for source in sources:
-        if not isinstance(source, dict):
-            continue
-        text = "\n".join(string_values_and_keys(source)).lower()
-        if any(marker in text for marker in RESEARCH_LOOP_SOURCE_MARKERS):
-            return True
-    return False
+    return _claimed_as_source_metadata(record, RESEARCH_LOOP_SOURCE_MARKERS)
 
 
 def workflow_claimed_as_source_metadata(record: dict[str, Any]) -> bool:
-    sources = record.get("sources")
-    if not isinstance(sources, list):
-        return False
-    for source in sources:
-        if not isinstance(source, dict):
-            continue
-        text = "\n".join(string_values_and_keys(source)).lower()
-        if any(marker in text for marker in WORKFLOW_SOURCE_MARKERS):
-            return True
-    return False
+    return _claimed_as_source_metadata(record, WORKFLOW_SOURCE_MARKERS)
 
 
 def crosscheck_claimed_as_source_metadata(record: dict[str, Any]) -> bool:
-    sources = record.get("sources")
-    if not isinstance(sources, list):
-        return False
-    for source in sources:
-        if not isinstance(source, dict):
-            continue
-        text = "\n".join(string_values_and_keys(source)).lower()
-        if any(marker in text for marker in CROSSCHECK_SOURCE_MARKERS):
-            return True
-    return False
+    return _claimed_as_source_metadata(record, CROSSCHECK_SOURCE_MARKERS)
 
 
 def campaign_claimed_as_source_metadata(record: dict[str, Any]) -> bool:
-    sources = record.get("sources")
-    if not isinstance(sources, list):
-        return False
-    for source in sources:
-        if not isinstance(source, dict):
-            continue
-        text = "\n".join(string_values_and_keys(source)).lower()
-        if any(marker in text for marker in CAMPAIGN_SOURCE_MARKERS):
-            return True
-    return False
+    return _claimed_as_source_metadata(record, CAMPAIGN_SOURCE_MARKERS)
 
 
 def research_loop_claimed_as_accepted_proof(record: dict[str, Any]) -> bool:
