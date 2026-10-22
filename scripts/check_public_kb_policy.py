@@ -321,32 +321,26 @@ def campaign_claimed_as_source_metadata(record: dict[str, Any]) -> bool:
     return False
 
 
-def research_loop_claimed_as_accepted_proof(record: dict[str, Any]) -> bool:
+def _claimed_as_accepted_proof(record: dict[str, Any], markers: tuple[str, ...]) -> bool:
     status = str(record.get("status", "")).lower()
     artifact_type = str(record.get("type", "")).lower()
     if status != "accepted" or artifact_type not in {"proof", "proof-sketch", "theorem"}:
         return False
     text = "\n".join(string_values_and_keys(record)).lower()
-    return any(marker in text for marker in RESEARCH_LOOP_SOURCE_MARKERS) and (
+    return any(marker in text for marker in markers) and (
         "accepted proof" in text
         or "accepted_proof" in text
         or "proof authority" in text
         or "proves the theorem" in text
     )
+
+
+def research_loop_claimed_as_accepted_proof(record: dict[str, Any]) -> bool:
+    return _claimed_as_accepted_proof(record, RESEARCH_LOOP_SOURCE_MARKERS)
 
 
 def workflow_claimed_as_accepted_proof(record: dict[str, Any]) -> bool:
-    status = str(record.get("status", "")).lower()
-    artifact_type = str(record.get("type", "")).lower()
-    if status != "accepted" or artifact_type not in {"proof", "proof-sketch", "theorem"}:
-        return False
-    text = "\n".join(string_values_and_keys(record)).lower()
-    return any(marker in text for marker in WORKFLOW_SOURCE_MARKERS) and (
-        "accepted proof" in text
-        or "accepted_proof" in text
-        or "proof authority" in text
-        or "proves the theorem" in text
-    )
+    return _claimed_as_accepted_proof(record, WORKFLOW_SOURCE_MARKERS)
 
 
 def crosscheck_claimed_as_accepted_authority(record: dict[str, Any]) -> bool:
