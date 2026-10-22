@@ -1227,7 +1227,21 @@ def write_campaign_fixture(root: Path, name: str, body: str) -> Path:
     return path
 
 
+def test_string_values() -> None:
+    assert string_values("hello") == ["hello"]
+    assert string_values(["hello", "world"]) == ["hello", "world"]
+    assert string_values({"a": "b", "c": "d"}) == ["b", "d"]
+    assert string_values({"a": ["b", "c"], "d": {"e": "f"}}) == ["b", "c", "f"]
+    assert string_values(123) == []
+    assert string_values(None) == []
+    assert string_values(True) == []
+    assert string_values({"a": [1, "b", None, {"c": "d", "e": False}]}) == ["b", "d"]
+    assert string_values({1: "a", None: "b", (1, 2): "c"}) == ["a", "b", "c"]
+
+
 def run_self_test() -> int:
+    test_string_values()
+
     cases = {
         "missing_sources": "missing source metadata",
         "missing_human_review": "missing human review metadata",
