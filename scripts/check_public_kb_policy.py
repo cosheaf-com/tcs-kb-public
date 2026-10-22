@@ -1199,32 +1199,27 @@ def bad_campaign_export(case: str) -> str:
     return yaml.safe_dump(base, sort_keys=False)
 
 
-def write_operator_handoff_fixture(root: Path, name: str, body: str) -> Path:
-    path = root / "reviews" / "operator" / f"{name}.yaml"
+def write_review_fixture(root: Path, review_type: str, name: str, body: str) -> Path:
+    path = root / "reviews" / review_type / f"{name}.yaml"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(body, encoding="utf-8")
     return path
+
+
+def write_operator_handoff_fixture(root: Path, name: str, body: str) -> Path:
+    return write_review_fixture(root, "operator", name, body)
 
 
 def write_research_loop_fixture(root: Path, name: str, body: str) -> Path:
-    path = root / "reviews" / "research-loop" / f"{name}.yaml"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(body, encoding="utf-8")
-    return path
+    return write_review_fixture(root, "research-loop", name, body)
 
 
 def write_crosscheck_fixture(root: Path, name: str, body: str) -> Path:
-    path = root / "reviews" / "crosscheck" / f"{name}.yaml"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(body, encoding="utf-8")
-    return path
+    return write_review_fixture(root, "crosscheck", name, body)
 
 
 def write_campaign_fixture(root: Path, name: str, body: str) -> Path:
-    path = root / "reviews" / "campaign" / f"{name}.yaml"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(body, encoding="utf-8")
-    return path
+    return write_review_fixture(root, "campaign", name, body)
 
 
 def run_self_test() -> int:
