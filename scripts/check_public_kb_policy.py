@@ -1227,7 +1227,29 @@ def write_campaign_fixture(root: Path, name: str, body: str) -> Path:
     return path
 
 
+
+def check_truthy_authority_value() -> list[str]:
+    errors: list[str] = []
+
+    # Happy paths (truthy)
+    for val in [True, "true", "True", " TRUE ", "yes", "Yes", " YES ", "1", " 1 "]:
+        if not truthy_authority_value(val):
+            errors.append(f"truthy_authority_value({repr(val)}) should be True")
+
+    # Falsey paths
+    for val in [False, "false", "no", "0", None, [], {}, 42, "", "   "]:
+        if truthy_authority_value(val):
+            errors.append(f"truthy_authority_value({repr(val)}) should be False")
+
+    return errors
+
 def run_self_test() -> int:
+    truthy_errors = check_truthy_authority_value()
+    if truthy_errors:
+        print("truthy_authority_value tests failed:", file=sys.stderr)
+        for error in truthy_errors:
+            print(f"- {error}", file=sys.stderr)
+        return 1
     cases = {
         "missing_sources": "missing source metadata",
         "missing_human_review": "missing human review metadata",
