@@ -256,66 +256,68 @@ def has_source_metadata(record: dict[str, Any]) -> bool:
     return False
 
 
-def operator_handoff_claimed_as_source_metadata(record: dict[str, Any]) -> bool:
+
+def _get_source_texts(record: dict[str, Any]) -> list[str] | None:
     sources = record.get("sources")
     if not isinstance(sources, list):
-        return False
+        return None
+    texts = []
     for source in sources:
         if not isinstance(source, dict):
             continue
-        text = "\n".join(string_values_and_keys(source)).lower()
+        texts.append("\n".join(string_values_and_keys(source)).lower())
+    return texts
+
+def operator_handoff_claimed_as_source_metadata(record: dict[str, Any], source_texts: list[str] | None = None) -> bool:
+    if source_texts is None:
+        source_texts = _get_source_texts(record)
+    if source_texts is None:
+        return False
+    for text in source_texts:
         if any(marker in text for marker in OPERATOR_HANDOFF_SOURCE_MARKERS):
             return True
     return False
 
 
-def research_loop_claimed_as_source_metadata(record: dict[str, Any]) -> bool:
-    sources = record.get("sources")
-    if not isinstance(sources, list):
+def research_loop_claimed_as_source_metadata(record: dict[str, Any], source_texts: list[str] | None = None) -> bool:
+    if source_texts is None:
+        source_texts = _get_source_texts(record)
+    if source_texts is None:
         return False
-    for source in sources:
-        if not isinstance(source, dict):
-            continue
-        text = "\n".join(string_values_and_keys(source)).lower()
+    for text in source_texts:
         if any(marker in text for marker in RESEARCH_LOOP_SOURCE_MARKERS):
             return True
     return False
 
 
-def workflow_claimed_as_source_metadata(record: dict[str, Any]) -> bool:
-    sources = record.get("sources")
-    if not isinstance(sources, list):
+def workflow_claimed_as_source_metadata(record: dict[str, Any], source_texts: list[str] | None = None) -> bool:
+    if source_texts is None:
+        source_texts = _get_source_texts(record)
+    if source_texts is None:
         return False
-    for source in sources:
-        if not isinstance(source, dict):
-            continue
-        text = "\n".join(string_values_and_keys(source)).lower()
+    for text in source_texts:
         if any(marker in text for marker in WORKFLOW_SOURCE_MARKERS):
             return True
     return False
 
 
-def crosscheck_claimed_as_source_metadata(record: dict[str, Any]) -> bool:
-    sources = record.get("sources")
-    if not isinstance(sources, list):
+def crosscheck_claimed_as_source_metadata(record: dict[str, Any], source_texts: list[str] | None = None) -> bool:
+    if source_texts is None:
+        source_texts = _get_source_texts(record)
+    if source_texts is None:
         return False
-    for source in sources:
-        if not isinstance(source, dict):
-            continue
-        text = "\n".join(string_values_and_keys(source)).lower()
+    for text in source_texts:
         if any(marker in text for marker in CROSSCHECK_SOURCE_MARKERS):
             return True
     return False
 
 
-def campaign_claimed_as_source_metadata(record: dict[str, Any]) -> bool:
-    sources = record.get("sources")
-    if not isinstance(sources, list):
+def campaign_claimed_as_source_metadata(record: dict[str, Any], source_texts: list[str] | None = None) -> bool:
+    if source_texts is None:
+        source_texts = _get_source_texts(record)
+    if source_texts is None:
         return False
-    for source in sources:
-        if not isinstance(source, dict):
-            continue
-        text = "\n".join(string_values_and_keys(source)).lower()
+    for text in source_texts:
         if any(marker in text for marker in CAMPAIGN_SOURCE_MARKERS):
             return True
     return False
@@ -684,23 +686,24 @@ def check_record(path: Path, record: dict[str, Any]) -> list[PolicyError]:
             errors.append(PolicyError(path, "accepted artifact is missing source metadata"))
         if not has_human_review(record):
             errors.append(PolicyError(path, "accepted artifact is missing human review metadata"))
-        if operator_handoff_claimed_as_source_metadata(record):
+        source_texts = _get_source_texts(record)
+        if operator_handoff_claimed_as_source_metadata(record, source_texts):
             errors.append(
                 PolicyError(path, "operator handoff is claimed as source metadata")
             )
-        if research_loop_claimed_as_source_metadata(record):
+        if research_loop_claimed_as_source_metadata(record, source_texts):
             errors.append(
                 PolicyError(path, "research loop output is claimed as source metadata")
             )
-        if workflow_claimed_as_source_metadata(record):
+        if workflow_claimed_as_source_metadata(record, source_texts):
             errors.append(
                 PolicyError(path, "workflow output is claimed as source metadata")
             )
-        if crosscheck_claimed_as_source_metadata(record):
+        if crosscheck_claimed_as_source_metadata(record, source_texts):
             errors.append(
                 PolicyError(path, "cross-check report is claimed as source metadata")
             )
-        if campaign_claimed_as_source_metadata(record):
+        if campaign_claimed_as_source_metadata(record, source_texts):
             errors.append(
                 PolicyError(path, "campaign output is claimed as source metadata")
             )
