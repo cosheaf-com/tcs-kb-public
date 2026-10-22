@@ -1227,7 +1227,31 @@ def write_campaign_fixture(root: Path, name: str, body: str) -> Path:
     return path
 
 
+def test_as_list() -> int:
+    cases = [
+        (None, []),
+        ([], []),
+        ([1, 2, 3], [1, 2, 3]),
+        ("foo", ["foo"]),
+        (1, [1]),
+        ({"a": 1}, [{"a": 1}]),
+        ([[1]], [[1]]),
+    ]
+    for input_val, expected in cases:
+        result = as_list(input_val)
+        if result != expected:
+            print(f"test_as_list failed: as_list({input_val!r}) returned {result!r}, expected {expected!r}", file=sys.stderr)
+            return 1
+        # Test identity for lists
+        if isinstance(input_val, list) and result is not input_val:
+            print(f"test_as_list failed: as_list({input_val!r}) did not return the identical list object", file=sys.stderr)
+            return 1
+    return 0
+
+
 def run_self_test() -> int:
+    if test_as_list() != 0:
+        return 1
     cases = {
         "missing_sources": "missing source metadata",
         "missing_human_review": "missing human review metadata",
