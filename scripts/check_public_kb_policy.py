@@ -529,7 +529,7 @@ def gate_results(record: dict[str, Any]) -> list[dict[str, Any]]:
     return results
 
 
-def crosscheck_output_claimed_as_gate_pass(record: dict[str, Any]) -> bool:
+def _output_claimed_as_gate_pass(record: dict[str, Any], markers: tuple[str, ...]) -> bool:
     for result in gate_results(record):
         status = str(result.get("status", "")).lower()
         verdict = str(result.get("verdict", "")).lower()
@@ -541,26 +541,17 @@ def crosscheck_output_claimed_as_gate_pass(record: dict[str, Any]) -> bool:
         ):
             continue
         text = "\n".join(string_values_and_keys(result)).lower()
-        if any(marker in text for marker in CROSSCHECK_SOURCE_MARKERS):
+        if any(marker in text for marker in markers):
             return True
     return False
+
+
+def crosscheck_output_claimed_as_gate_pass(record: dict[str, Any]) -> bool:
+    return _output_claimed_as_gate_pass(record, CROSSCHECK_SOURCE_MARKERS)
 
 
 def campaign_output_claimed_as_gate_pass(record: dict[str, Any]) -> bool:
-    for result in gate_results(record):
-        status = str(result.get("status", "")).lower()
-        verdict = str(result.get("verdict", "")).lower()
-        conclusion = str(result.get("conclusion", "")).lower()
-        if not (
-            status in PASS_STATUSES
-            or verdict in PASS_STATUSES
-            or conclusion in PASS_STATUSES
-        ):
-            continue
-        text = "\n".join(string_values_and_keys(result)).lower()
-        if any(marker in text for marker in CAMPAIGN_SOURCE_MARKERS):
-            return True
-    return False
+    return _output_claimed_as_gate_pass(record, CAMPAIGN_SOURCE_MARKERS)
 
 
 def checked_formalization_without_evidence(record: dict[str, Any]) -> bool:
