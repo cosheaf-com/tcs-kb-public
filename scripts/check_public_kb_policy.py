@@ -321,12 +321,12 @@ def campaign_claimed_as_source_metadata(record: dict[str, Any]) -> bool:
     return False
 
 
-def research_loop_claimed_as_accepted_proof(record: dict[str, Any]) -> bool:
+def research_loop_claimed_as_accepted_proof(record: dict[str, Any], record_text: str | None = None) -> bool:
     status = str(record.get("status", "")).lower()
     artifact_type = str(record.get("type", "")).lower()
     if status != "accepted" or artifact_type not in {"proof", "proof-sketch", "theorem"}:
         return False
-    text = "\n".join(string_values_and_keys(record)).lower()
+    text = record_text if record_text is not None else "\n".join(string_values_and_keys(record)).lower()
     return any(marker in text for marker in RESEARCH_LOOP_SOURCE_MARKERS) and (
         "accepted proof" in text
         or "accepted_proof" in text
@@ -335,12 +335,12 @@ def research_loop_claimed_as_accepted_proof(record: dict[str, Any]) -> bool:
     )
 
 
-def workflow_claimed_as_accepted_proof(record: dict[str, Any]) -> bool:
+def workflow_claimed_as_accepted_proof(record: dict[str, Any], record_text: str | None = None) -> bool:
     status = str(record.get("status", "")).lower()
     artifact_type = str(record.get("type", "")).lower()
     if status != "accepted" or artifact_type not in {"proof", "proof-sketch", "theorem"}:
         return False
-    text = "\n".join(string_values_and_keys(record)).lower()
+    text = record_text if record_text is not None else "\n".join(string_values_and_keys(record)).lower()
     return any(marker in text for marker in WORKFLOW_SOURCE_MARKERS) and (
         "accepted proof" in text
         or "accepted_proof" in text
@@ -349,10 +349,10 @@ def workflow_claimed_as_accepted_proof(record: dict[str, Any]) -> bool:
     )
 
 
-def crosscheck_claimed_as_accepted_authority(record: dict[str, Any]) -> bool:
+def crosscheck_claimed_as_accepted_authority(record: dict[str, Any], record_text: str | None = None) -> bool:
     if str(record.get("status", "")).lower() != "accepted":
         return False
-    text = "\n".join(string_values_and_keys(record)).lower()
+    text = record_text if record_text is not None else "\n".join(string_values_and_keys(record)).lower()
     if not any(marker in text for marker in CROSSCHECK_SOURCE_MARKERS):
         return False
     authority_phrases = (
@@ -372,10 +372,10 @@ def crosscheck_claimed_as_accepted_authority(record: dict[str, Any]) -> bool:
     return any(phrase in text for phrase in authority_phrases)
 
 
-def campaign_claimed_as_accepted_authority(record: dict[str, Any]) -> bool:
+def campaign_claimed_as_accepted_authority(record: dict[str, Any], record_text: str | None = None) -> bool:
     if str(record.get("status", "")).lower() != "accepted":
         return False
-    text = "\n".join(string_values_and_keys(record)).lower()
+    text = record_text if record_text is not None else "\n".join(string_values_and_keys(record)).lower()
     if not any(marker in text for marker in CAMPAIGN_SOURCE_MARKERS):
         return False
     authority_phrases = (
@@ -680,6 +680,7 @@ def check_record(path: Path, record: dict[str, Any]) -> list[PolicyError]:
     errors: list[PolicyError] = []
     status = str(record.get("status", "")).lower()
     if status == "accepted":
+        record_text = "\n".join(string_values_and_keys(record)).lower()
         if not has_source_metadata(record):
             errors.append(PolicyError(path, "accepted artifact is missing source metadata"))
         if not has_human_review(record):
@@ -704,19 +705,19 @@ def check_record(path: Path, record: dict[str, Any]) -> list[PolicyError]:
             errors.append(
                 PolicyError(path, "campaign output is claimed as source metadata")
             )
-        if research_loop_claimed_as_accepted_proof(record):
+        if research_loop_claimed_as_accepted_proof(record, record_text=record_text):
             errors.append(
                 PolicyError(path, "research loop output is claimed as accepted proof")
             )
-        if workflow_claimed_as_accepted_proof(record):
+        if workflow_claimed_as_accepted_proof(record, record_text=record_text):
             errors.append(
                 PolicyError(path, "workflow output is claimed as accepted proof")
             )
-        if crosscheck_claimed_as_accepted_authority(record):
+        if crosscheck_claimed_as_accepted_authority(record, record_text=record_text):
             errors.append(
                 PolicyError(path, "cross-check report is claimed as accepted theorem/refutation/status")
             )
-        if campaign_claimed_as_accepted_authority(record):
+        if campaign_claimed_as_accepted_authority(record, record_text=record_text):
             errors.append(
                 PolicyError(path, "campaign output is claimed as accepted theorem/refutation/status")
             )
