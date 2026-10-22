@@ -455,8 +455,12 @@ def verifier_results(record: dict[str, Any]) -> list[dict[str, Any]]:
     return results
 
 
-def skipped_treated_as_pass(record: dict[str, Any]) -> bool:
-    for result in verifier_results(record):
+def skipped_treated_as_pass(
+    record: dict[str, Any], v_results: list[dict[str, Any]] | None = None
+) -> bool:
+    if v_results is None:
+        v_results = verifier_results(record)
+    for result in v_results:
         status = str(result.get("status", "")).lower()
         verdict = str(result.get("verdict", "")).lower()
         conclusion = str(result.get("conclusion", "")).lower()
@@ -467,8 +471,12 @@ def skipped_treated_as_pass(record: dict[str, Any]) -> bool:
     return False
 
 
-def nonhuman_output_claimed_as_verifier_pass(record: dict[str, Any]) -> bool:
-    for result in verifier_results(record):
+def nonhuman_output_claimed_as_verifier_pass(
+    record: dict[str, Any], v_results: list[dict[str, Any]] | None = None
+) -> bool:
+    if v_results is None:
+        v_results = verifier_results(record)
+    for result in v_results:
         status = str(result.get("status", "")).lower()
         verdict = str(result.get("verdict", "")).lower()
         conclusion = str(result.get("conclusion", "")).lower()
@@ -484,8 +492,12 @@ def nonhuman_output_claimed_as_verifier_pass(record: dict[str, Any]) -> bool:
     return False
 
 
-def crosscheck_output_claimed_as_verifier_pass(record: dict[str, Any]) -> bool:
-    for result in verifier_results(record):
+def crosscheck_output_claimed_as_verifier_pass(
+    record: dict[str, Any], v_results: list[dict[str, Any]] | None = None
+) -> bool:
+    if v_results is None:
+        v_results = verifier_results(record)
+    for result in v_results:
         status = str(result.get("status", "")).lower()
         verdict = str(result.get("verdict", "")).lower()
         conclusion = str(result.get("conclusion", "")).lower()
@@ -501,8 +513,12 @@ def crosscheck_output_claimed_as_verifier_pass(record: dict[str, Any]) -> bool:
     return False
 
 
-def campaign_output_claimed_as_verifier_pass(record: dict[str, Any]) -> bool:
-    for result in verifier_results(record):
+def campaign_output_claimed_as_verifier_pass(
+    record: dict[str, Any], v_results: list[dict[str, Any]] | None = None
+) -> bool:
+    if v_results is None:
+        v_results = verifier_results(record)
+    for result in v_results:
         status = str(result.get("status", "")).lower()
         verdict = str(result.get("verdict", "")).lower()
         conclusion = str(result.get("conclusion", "")).lower()
@@ -726,17 +742,18 @@ def check_record(path: Path, record: dict[str, Any]) -> list[PolicyError]:
             )
     if has_private_dependency(record):
         errors.append(PolicyError(path, "public artifact depends on a private artifact"))
-    if skipped_treated_as_pass(record):
+    v_results = verifier_results(record)
+    if skipped_treated_as_pass(record, v_results):
         errors.append(PolicyError(path, "skipped verifier result is treated as pass"))
-    if nonhuman_output_claimed_as_verifier_pass(record):
+    if nonhuman_output_claimed_as_verifier_pass(record, v_results):
         errors.append(
             PolicyError(path, "operator or model output is claimed as verifier pass")
         )
-    if crosscheck_output_claimed_as_verifier_pass(record):
+    if crosscheck_output_claimed_as_verifier_pass(record, v_results):
         errors.append(
             PolicyError(path, "cross-check report is claimed as verifier pass")
         )
-    if campaign_output_claimed_as_verifier_pass(record):
+    if campaign_output_claimed_as_verifier_pass(record, v_results):
         errors.append(
             PolicyError(path, "campaign output is claimed as verifier pass")
         )
