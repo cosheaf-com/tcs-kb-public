@@ -1227,7 +1227,68 @@ def write_campaign_fixture(root: Path, name: str, body: str) -> Path:
     return path
 
 
+def test_load_yaml() -> bool:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+
+        # Valid mapping
+        valid_path = root / "valid.yaml"
+        valid_path.write_text("key: value\n", encoding="utf-8")
+        data = load_yaml(valid_path)
+        if data != {"key": "value"}:
+            print(f"load_yaml test failed: valid mapping returned {data}", file=sys.stderr)
+            return False
+
+        # Non-mapping YAML
+        list_path = root / "list.yaml"
+        list_path.write_text("- item1\n- item2\n", encoding="utf-8")
+        try:
+            load_yaml(list_path)
+            print("load_yaml test failed: list did not raise ValueError", file=sys.stderr)
+            return False
+        except ValueError as e:
+            if "did not contain a YAML mapping" not in str(e):
+                print(f"load_yaml test failed: list raised wrong ValueError: {e}", file=sys.stderr)
+                return False
+
+        # Empty YAML
+        empty_path = root / "empty.yaml"
+        empty_path.write_text("", encoding="utf-8")
+        try:
+            load_yaml(empty_path)
+            print("load_yaml test failed: empty file did not raise ValueError", file=sys.stderr)
+            return False
+        except ValueError as e:
+            if "did not contain a YAML mapping" not in str(e):
+                print(f"load_yaml test failed: empty file raised wrong ValueError: {e}", file=sys.stderr)
+                return False
+
+        # Invalid YAML
+        invalid_path = root / "invalid.yaml"
+        invalid_path.write_text("key: : invalid\n", encoding="utf-8")
+        try:
+            load_yaml(invalid_path)
+            print("load_yaml test failed: invalid yaml did not raise Exception", file=sys.stderr)
+            return False
+        except yaml.YAMLError:
+            pass
+
+        # Missing file
+        missing_path = root / "missing.yaml"
+        try:
+            load_yaml(missing_path)
+            print("load_yaml test failed: missing file did not raise FileNotFoundError", file=sys.stderr)
+            return False
+        except FileNotFoundError:
+            pass
+
+    return True
+
+
 def run_self_test() -> int:
+    if not test_load_yaml():
+        return 1
+
     cases = {
         "missing_sources": "missing source metadata",
         "missing_human_review": "missing human review metadata",
