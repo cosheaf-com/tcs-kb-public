@@ -13,7 +13,7 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import yaml
 
@@ -604,22 +604,36 @@ def has_true_operator_handoff_authority_field(value: Any) -> bool:
     return False
 
 
+
+def _check_review_record(
+    path: Path,
+    record: dict[str, Any],
+    item_name: str,
+    forbidden_marker_fn: Callable[[dict[str, Any]], bool],
+    forbidden_marker_msg: str
+) -> list[PolicyError]:
+    errors: list[PolicyError] = []
+    if record.get("review_context_only") is not True:
+        errors.append(PolicyError(path, f"{item_name} is not marked review_context_only"))
+    if has_true_operator_handoff_authority_field(record):
+        errors.append(PolicyError(path, f"{item_name} claims accepted/review/promotion authority"))
+    if forbidden_marker_fn(record):
+        errors.append(PolicyError(path, forbidden_marker_msg))
+    return errors
+
 def operator_handoff_has_forbidden_marker(record: dict[str, Any]) -> bool:
     text = "\n".join(string_values_and_keys(record)).lower()
     return any(marker in text for marker in OPERATOR_HANDOFF_FORBIDDEN_MARKERS)
 
 
 def check_operator_handoff_record(path: Path, record: dict[str, Any]) -> list[PolicyError]:
-    errors: list[PolicyError] = []
-    if record.get("review_context_only") is not True:
-        errors.append(PolicyError(path, "operator handoff is not marked review_context_only"))
-    if has_true_operator_handoff_authority_field(record):
-        errors.append(PolicyError(path, "operator handoff claims accepted/review/promotion authority"))
-    if operator_handoff_has_forbidden_marker(record):
-        errors.append(
-            PolicyError(path, "operator handoff contains private, secret, reasoning, or provider-payload marker")
-        )
-    return errors
+    return _check_review_record(
+        path,
+        record,
+        "operator handoff",
+        operator_handoff_has_forbidden_marker,
+        "operator handoff contains private, secret, reasoning, or provider-payload marker",
+    )
 
 
 def research_loop_has_forbidden_marker(record: dict[str, Any]) -> bool:
@@ -628,16 +642,13 @@ def research_loop_has_forbidden_marker(record: dict[str, Any]) -> bool:
 
 
 def check_research_loop_record(path: Path, record: dict[str, Any]) -> list[PolicyError]:
-    errors: list[PolicyError] = []
-    if record.get("review_context_only") is not True:
-        errors.append(PolicyError(path, "research loop output is not marked review_context_only"))
-    if has_true_operator_handoff_authority_field(record):
-        errors.append(PolicyError(path, "research loop output claims accepted/review/promotion authority"))
-    if research_loop_has_forbidden_marker(record):
-        errors.append(
-            PolicyError(path, "research loop output contains private, secret, proof, source, reasoning, or provider-payload marker")
-        )
-    return errors
+    return _check_review_record(
+        path,
+        record,
+        "research loop output",
+        research_loop_has_forbidden_marker,
+        "research loop output contains private, secret, proof, source, reasoning, or provider-payload marker",
+    )
 
 
 def crosscheck_record_has_forbidden_marker(record: dict[str, Any]) -> bool:
@@ -646,16 +657,13 @@ def crosscheck_record_has_forbidden_marker(record: dict[str, Any]) -> bool:
 
 
 def check_crosscheck_record(path: Path, record: dict[str, Any]) -> list[PolicyError]:
-    errors: list[PolicyError] = []
-    if record.get("review_context_only") is not True:
-        errors.append(PolicyError(path, "cross-check report is not marked review_context_only"))
-    if has_true_operator_handoff_authority_field(record):
-        errors.append(PolicyError(path, "cross-check report claims accepted/review/promotion authority"))
-    if crosscheck_record_has_forbidden_marker(record):
-        errors.append(
-            PolicyError(path, "cross-check report contains private, secret, reasoning, or provider-payload marker")
-        )
-    return errors
+    return _check_review_record(
+        path,
+        record,
+        "cross-check report",
+        crosscheck_record_has_forbidden_marker,
+        "cross-check report contains private, secret, reasoning, or provider-payload marker",
+    )
 
 
 def campaign_record_has_forbidden_marker(record: dict[str, Any]) -> bool:
@@ -664,16 +672,13 @@ def campaign_record_has_forbidden_marker(record: dict[str, Any]) -> bool:
 
 
 def check_campaign_record(path: Path, record: dict[str, Any]) -> list[PolicyError]:
-    errors: list[PolicyError] = []
-    if record.get("review_context_only") is not True:
-        errors.append(PolicyError(path, "campaign output is not marked review_context_only"))
-    if has_true_operator_handoff_authority_field(record):
-        errors.append(PolicyError(path, "campaign output claims accepted/review/promotion authority"))
-    if campaign_record_has_forbidden_marker(record):
-        errors.append(
-            PolicyError(path, "campaign output contains private, secret, reasoning, or provider-payload marker")
-        )
-    return errors
+    return _check_review_record(
+        path,
+        record,
+        "campaign output",
+        campaign_record_has_forbidden_marker,
+        "campaign output contains private, secret, reasoning, or provider-payload marker",
+    )
 
 
 def check_record(path: Path, record: dict[str, Any]) -> list[PolicyError]:
@@ -1080,6 +1085,8 @@ def bad_operator_handoff(case: str) -> str:
         base["human_review_created"] = True
     elif case == "operator_handoff_provider_dump":
         base["provider_response"] = {"raw": "provider response payload should not be imported"}
+    elif case == "operator_handoff_missing_context_flag":
+        base.pop("review_context_only", None)
     else:
         raise ValueError(case)
     base["handoff_id"] = f"handoff.{case}"
@@ -1113,6 +1120,8 @@ def bad_research_loop_export(case: str) -> str:
         base["accepted_write_performed"] = True
     elif case == "research_loop_provider_dump":
         base["provider_response"] = {"raw": "provider response payload should not be imported"}
+    elif case == "research_loop_missing_context_flag":
+        base.pop("review_context_only", None)
     else:
         raise ValueError(case)
     base["loop_id"] = f"loop.{case}"
@@ -1269,6 +1278,8 @@ def run_self_test() -> int:
         "campaign_authority_true": "campaign output claims accepted/review/promotion authority",
         "campaign_provider_dump": "campaign output contains private, secret, reasoning, or provider-payload marker",
         "campaign_missing_context_flag": "campaign output is not marked review_context_only",
+        "operator_handoff_missing_context_flag": "operator handoff is not marked review_context_only",
+        "research_loop_missing_context_flag": "research loop output is not marked review_context_only",
     }
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
